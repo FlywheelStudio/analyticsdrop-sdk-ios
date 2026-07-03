@@ -1,6 +1,9 @@
 .build/
 .swiftpm/
 DerivedData/
-*.xcodeproj/xcuserdata/
-*.xcworkspace/xcuserdata/
+*.xcodeproj/
+*.xcworkspace/
 .DS_Store
+# Example app generated/build artifacts
+Examples/**/dd/
+Examples/**/build/

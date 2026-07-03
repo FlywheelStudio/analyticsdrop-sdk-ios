@@ -1,0 +1,24 @@
+name: WayfindDemo
+options:
+  bundleIdPrefix: dev.wayfind
+  deploymentTarget:
+    iOS: "16.0"
+packages:
+  Wayfind:
+    path: ../..
+targets:
+  WayfindDemo:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.wayfind.demo
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Sources/Info.plist
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGNING_ALLOWED: NO
+    dependencies:
+      - package: Wayfind
+        product: Wayfind

@@ -21,7 +21,7 @@ final class WayfindTests: XCTestCase {
         let ev = WireEvent(
             type: "screen_view", eventId: "e", anonymousId: "a", userId: nil, sessionId: "s",
             seq: 1, ts: "t",
-            screen: WireScreen(fingerprint: "F", kind: "uikit", thumbnailPng: nil),
+            screen: WireScreen(fingerprint: "F", kind: "uikit", thumbnailPng: nil, name: nil),
             event: nil,
             context: WireContext(appVersion: "1", build: "1", os: "iOS", device: "d", sdk: "wayfind-ios/0.1.0")
         )

@@ -1,8 +1,8 @@
 import Foundation
 
-/// Uploads batches to `POST {endpoint}/v1/events`. POC sends uncompressed JSON (the backend accepts
-/// both gzip and plain); gzip is a documented later optimization. 2 retries with backoff on
-/// 5xx/network failure, then the batch is dropped (no dead-letter — POC, §3.5).
+/// Uploads batches to `POST {endpoint}/v1/events` as gzip JSON (plain JSON fallback if
+/// compression fails). 2 retries with backoff on 5xx/network failure, then the batch is
+/// dropped (no dead-letter — POC, §3.5).
 final class APIClient {
     private let config: WayfindConfig
     private let session: URLSession
@@ -46,7 +46,12 @@ final class APIClient {
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue(config.apiKey, forHTTPHeaderField: "X-Wayfind-Key")
-        req.httpBody = body
+        if let gz = Gzip.compress(body) {
+            req.setValue("gzip", forHTTPHeaderField: "Content-Encoding")
+            req.httpBody = gz
+        } else {
+            req.httpBody = body
+        }
 
         session.dataTask(with: req) { [weak self] _, response, error in
             guard let self else { return }

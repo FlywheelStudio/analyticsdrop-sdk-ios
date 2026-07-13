@@ -139,12 +139,13 @@ final class Core {
 
     func setScreenName(_ name: String) {
         queueSerial.async {
-            self.emit(.screenView, screen: WireScreen(fingerprint: name, kind: "manual", thumbnailPng: nil))
+            self.emit(.screenView, screen: WireScreen(fingerprint: name, kind: "manual", thumbnailPng: nil, name: name))
         }
     }
 
     /// Called by the capture layer (main thread). Debounces identical fingerprints (§3.2).
-    func captureScreen(fingerprint: String, kind: String) {
+    /// `name` is an optional display-name hint derived from code identifiers (ScreenNameHint).
+    func captureScreen(fingerprint: String, kind: String, name: String? = nil) {
         queueSerial.async {
             let now = Date()
             if let last = self.lastFingerprint, last == fingerprint,
@@ -154,7 +155,7 @@ final class Core {
             }
             self.lastFingerprint = fingerprint
             self.lastFingerprintAt = now
-            self.emit(.screenView, screen: WireScreen(fingerprint: fingerprint, kind: kind, thumbnailPng: nil))
+            self.emit(.screenView, screen: WireScreen(fingerprint: fingerprint, kind: kind, thumbnailPng: nil, name: name))
         }
     }
 

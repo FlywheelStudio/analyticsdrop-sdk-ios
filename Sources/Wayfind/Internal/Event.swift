@@ -26,6 +26,8 @@ struct WireScreen: Encodable {
     let fingerprint: String
     let kind: String // uikit | swiftui | manual
     let thumbnailPng: String?
+    /// Inferred display name (type/class derived, never user content — see ScreenNameHint).
+    let name: String?
 }
 
 struct WireTrack: Encodable {

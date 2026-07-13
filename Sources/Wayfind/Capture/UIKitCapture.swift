@@ -26,9 +26,13 @@ enum UIKitCapture {
         // fingerprint path (Mechanism B -> C). Checked before system filtering (mangled generic
         // names start with "_").
         if className.contains("HostingController") {
+            // Mechanism A (name inference): the hosting controller's generic parameters often
+            // name the root SwiftUI view (e.g. UIHostingController<DetailView>). Derived from
+            // type names only — never titles/content (privacy invariant).
+            let hint = ScreenNameHint.fromHostingClass(String(describing: type(of: vc)))
             DispatchQueue.main.async {
                 if let fp = ScreenFingerprint.current() {
-                    Core.shared.captureScreen(fingerprint: fp, kind: "swiftui")
+                    Core.shared.captureScreen(fingerprint: fp, kind: "swiftui", name: hint)
                 }
             }
             return
@@ -38,7 +42,7 @@ enum UIKitCapture {
 
         // Leaf UIKit content controller: identity is the class name (e.g. CheckoutViewController).
         let name = String(describing: type(of: vc))
-        Core.shared.captureScreen(fingerprint: name, kind: "uikit")
+        Core.shared.captureScreen(fingerprint: name, kind: "uikit", name: ScreenNameHint.fromUIKitClass(name))
     }
 
     private static func isContainerOrSystem(_ vc: UIViewController, _ className: String) -> Bool {

@@ -10,7 +10,10 @@ let package = Package(
         .library(name: "Wayfind", targets: ["Wayfind"]),
     ],
     targets: [
-        .target(name: "Wayfind"),
+        .target(
+            name: "Wayfind",
+            resources: [.copy("PrivacyInfo.xcprivacy")]
+        ),
         .testTarget(name: "WayfindTests", dependencies: ["Wayfind"]),
     ]
 )

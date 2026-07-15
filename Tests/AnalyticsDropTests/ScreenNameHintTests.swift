@@ -1,5 +1,5 @@
 import XCTest
-@testable import Wayfind
+@testable import AnalyticsDrop
 
 final class ScreenNameHintTests: XCTestCase {
     // MARK: hosting-controller generic parsing (SwiftUI, Mechanism A)

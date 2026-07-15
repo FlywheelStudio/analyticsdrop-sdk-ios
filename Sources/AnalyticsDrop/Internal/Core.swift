@@ -9,9 +9,9 @@ final class Core {
     static let shared = Core()
     private init() {}
 
-    private let queueSerial = DispatchQueue(label: "dev.wayfind.core")
+    private let queueSerial = DispatchQueue(label: "dev.analyticsdrop.core")
 
-    private var config: WayfindConfig?
+    private var config: AnalyticsDropConfig?
     private var identity: IdentityManager?
     private var queue: EventQueue?
     private var transport: APIClient?
@@ -29,7 +29,7 @@ final class Core {
 
     // MARK: - Lifecycle
 
-    func start(config: WayfindConfig) {
+    func start(config: AnalyticsDropConfig) {
         queueSerial.async {
             guard self.config == nil else { return }
             self.config = config
@@ -131,7 +131,7 @@ final class Core {
         }
     }
 
-    func track(_ name: String, properties: [String: WayfindValue]?) {
+    func track(_ name: String, properties: [String: AnalyticsDropValue]?) {
         queueSerial.async {
             self.emit(.track, track: WireTrack(name: name, properties: properties))
         }
@@ -196,6 +196,6 @@ final class Core {
     }
 
     private func log(_ message: String) {
-        if config?.debug == true { print("[Wayfind] \(message)") }
+        if config?.debug == true { print("[AnalyticsDrop] \(message)") }
     }
 }

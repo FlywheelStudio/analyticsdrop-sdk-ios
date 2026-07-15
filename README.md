@@ -1,20 +1,20 @@
-# Wayfind iOS SDK
+# AnalyticsDrop iOS SDK
 
 One-line screen-journey analytics for iOS (UIKit **and** SwiftUI). Zero third-party dependencies.
 
 ```swift
-import Wayfind
+import AnalyticsDrop
 
 // App launch (AppDelegate / App init):
-Wayfind.start(apiKey: "wf_test_…", endpoint: URL(string: "http://localhost:3100"), debug: true)
+AnalyticsDrop.start(apiKey: "ad_test_…", endpoint: URL(string: "http://localhost:3100"), debug: true)
 
 // SwiftUI root:
-WindowGroup { ContentView().wayfindTracked() }
+WindowGroup { ContentView().analyticsDropTracked() }
 
 // Optional:
-Wayfind.identify("cust_123")
-Wayfind.track("purchase", properties: ["value": 9.99])
-SomeView().wayfindScreen("Checkout")   // exact name escape hatch
+AnalyticsDrop.identify("cust_123")
+AnalyticsDrop.track("purchase", properties: ["value": 9.99])
+SomeView().analyticsDropScreen("Checkout")   // exact name escape hatch
 ```
 
 ## How it works
@@ -27,7 +27,7 @@ SomeView().wayfindScreen("Checkout")   // exact name escape hatch
 - **Privacy invariant** — fingerprints record only structure (`depth, class, bucketed frame,
   hasText`); never text content. Thumbnails (redacted boxes) are a later addition.
 
-Events batch and upload to `POST {endpoint}/v1/events` with header `X-Wayfind-Key`.
+Events batch and upload to `POST {endpoint}/v1/events` with header `X-AnalyticsDrop-Key`.
 
 ## Status (POC)
 

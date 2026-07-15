@@ -4,7 +4,7 @@ import Security
 /// Owns the anonymous device id (persisted in the Keychain so it survives reinstall on the same
 /// device — acceptable for the POC, §3.4) and the customer-supplied external user id (in memory).
 final class IdentityManager {
-    private let service = "dev.wayfind.sdk"
+    private let service = "dev.analyticsdrop.sdk"
     private let account = "anonymousId"
 
     let anonymousId: String

@@ -1,21 +1,21 @@
 import Foundation
 
-/// The entire public surface of the Wayfind SDK.
+/// The entire public surface of the AnalyticsDrop SDK.
 ///
 /// Integrate in one line at app launch:
 /// ```swift
-/// Wayfind.start(apiKey: "wf_test_…")
+/// AnalyticsDrop.start(apiKey: "ad_test_…")
 /// ```
-/// and (SwiftUI) attach `.wayfindTracked()` at the root.
-public enum Wayfind {
+/// and (SwiftUI) attach `.analyticsDropTracked()` at the root.
+public enum AnalyticsDrop {
     /// Call once, as early as possible (App init / AppDelegate).
     /// - Parameters:
-    ///   - apiKey: Your app's ingest key (`X-Wayfind-Key`).
+    ///   - apiKey: Your app's ingest key (`X-AnalyticsDrop-Key`).
     ///   - endpoint: Base URL of the backend. Defaults to the hosted endpoint; pass a local URL for dev.
     ///   - debug: When true, logs SDK activity to the console.
     public static func start(apiKey: String, endpoint: URL? = nil, debug: Bool = false) {
         Core.shared.start(
-            config: WayfindConfig(apiKey: apiKey, endpoint: endpoint ?? WayfindConfig.defaultEndpoint, debug: debug)
+            config: AnalyticsDropConfig(apiKey: apiKey, endpoint: endpoint ?? AnalyticsDropConfig.defaultEndpoint, debug: debug)
         )
     }
 
@@ -25,7 +25,7 @@ public enum Wayfind {
     }
 
     /// Manual conversion event. Deliberately minimal.
-    public static func track(_ event: String, properties: [String: WayfindValue]? = nil) {
+    public static func track(_ event: String, properties: [String: AnalyticsDropValue]? = nil) {
         Core.shared.track(event, properties: properties)
     }
 
@@ -36,7 +36,7 @@ public enum Wayfind {
 }
 
 /// A JSON-scalar value usable in `track` properties.
-public enum WayfindValue: Codable, Equatable {
+public enum AnalyticsDropValue: Codable, Equatable {
     case string(String)
     case number(Double)
     case bool(Bool)
@@ -62,15 +62,15 @@ public enum WayfindValue: Codable, Equatable {
     }
 }
 
-extension WayfindValue: ExpressibleByStringLiteral {
+extension AnalyticsDropValue: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) { self = .string(value) }
 }
-extension WayfindValue: ExpressibleByIntegerLiteral {
+extension AnalyticsDropValue: ExpressibleByIntegerLiteral {
     public init(integerLiteral value: Int) { self = .number(Double(value)) }
 }
-extension WayfindValue: ExpressibleByFloatLiteral {
+extension AnalyticsDropValue: ExpressibleByFloatLiteral {
     public init(floatLiteral value: Double) { self = .number(value) }
 }
-extension WayfindValue: ExpressibleByBooleanLiteral {
+extension AnalyticsDropValue: ExpressibleByBooleanLiteral {
     public init(booleanLiteral value: Bool) { self = .bool(value) }
 }

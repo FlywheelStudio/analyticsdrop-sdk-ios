@@ -1,22 +1,22 @@
 import SwiftUI
-import Wayfind
+import AnalyticsDrop
 
-// Throwaway harness that exercises the real Wayfind SDK end-to-end: it auto-drives a
+// Throwaway harness that exercises the real AnalyticsDrop SDK end-to-end: it auto-drives a
 // NavigationStack journey so screen_views + edges + a purchase appear in the dashboard with
 // no manual tapping. The Primus integration is the real deliverable; this just proves the loop.
 
 @main
-struct WayfindDemoApp: App {
+struct AnalyticsDropDemoApp: App {
     init() {
-        Wayfind.start(
-            apiKey: "wf_test_primus_dev",
+        AnalyticsDrop.start(
+            apiKey: "ad_test_primus_dev",
             endpoint: URL(string: "http://localhost:3100"),
             debug: true
         )
-        Wayfind.identify("demo_user_1")
+        AnalyticsDrop.identify("demo_user_1")
     }
     var body: some Scene {
-        WindowGroup { RootView().wayfindTracked() }
+        WindowGroup { RootView().analyticsDropTracked() }
     }
 }
 
@@ -43,7 +43,7 @@ struct RootView: View {
         await sleep(1.4); path = [.detail]
         await sleep(1.6); path = [.detail, .paywall]
         await sleep(1.6); path = [.detail, .paywall, .checkout]
-        await sleep(1.2); Wayfind.track("purchase", properties: ["value": 9.99, "plan": "pro"])
+        await sleep(1.2); AnalyticsDrop.track("purchase", properties: ["value": 9.99, "plan": "pro"])
         // pop back home and revisit detail to create a returning-style edge
         await sleep(1.2); path = []
         await sleep(1.2); path = [.detail]

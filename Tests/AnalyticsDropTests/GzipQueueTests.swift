@@ -1,6 +1,6 @@
 import XCTest
 import Compression
-@testable import Wayfind
+@testable import AnalyticsDrop
 
 final class GzipTests: XCTestCase {
     func testCrc32KnownVector() {

@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Wayfind never tracks across apps/sites and records no user content
+	<!-- AnalyticsDrop never tracks across apps/sites and records no user content
 	     (structural fingerprints only — see ScreenFingerprint/ScreenNameHint). -->
 	<key>NSPrivacyTracking</key>
 	<false/>

@@ -1,24 +1,24 @@
-name: WayfindDemo
+name: AnalyticsDropDemo
 options:
-  bundleIdPrefix: dev.wayfind
+  bundleIdPrefix: dev.analyticsdrop
   deploymentTarget:
     iOS: "16.0"
 packages:
-  Wayfind:
+  AnalyticsDrop:
     path: ../..
 targets:
-  WayfindDemo:
+  AnalyticsDropDemo:
     type: application
     platform: iOS
     sources:
       - Sources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: dev.wayfind.demo
+        PRODUCT_BUNDLE_IDENTIFIER: dev.analyticsdrop.demo
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Sources/Info.plist
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGNING_ALLOWED: NO
     dependencies:
-      - package: Wayfind
-        product: Wayfind
+      - package: AnalyticsDrop
+        product: AnalyticsDrop

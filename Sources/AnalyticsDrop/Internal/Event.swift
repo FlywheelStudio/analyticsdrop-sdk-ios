@@ -32,7 +32,7 @@ struct WireScreen: Encodable {
 
 struct WireTrack: Encodable {
     let name: String
-    let properties: [String: WayfindValue]?
+    let properties: [String: AnalyticsDropValue]?
 }
 
 struct WireContext: Encodable {
@@ -52,7 +52,7 @@ enum WireEventType: String {
 }
 
 enum SDKInfo {
-    static let version = "wayfind-ios/0.1.0"
+    static let version = "analyticsdrop-ios/0.1.0"
 }
 
 /// One-time device/app context snapshot.

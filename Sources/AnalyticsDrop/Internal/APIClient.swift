@@ -4,11 +4,11 @@ import Foundation
 /// compression fails). 2 retries with backoff on 5xx/network failure, then the batch is
 /// dropped (no dead-letter — POC, §3.5).
 final class APIClient {
-    private let config: WayfindConfig
+    private let config: AnalyticsDropConfig
     private let session: URLSession
     private let eventsURL: URL
 
-    init(config: WayfindConfig) {
+    init(config: AnalyticsDropConfig) {
         self.config = config
         let cfg = URLSessionConfiguration.default
         cfg.timeoutIntervalForRequest = 30
@@ -45,7 +45,7 @@ final class APIClient {
         var req = URLRequest(url: eventsURL)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(config.apiKey, forHTTPHeaderField: "X-Wayfind-Key")
+        req.setValue(config.apiKey, forHTTPHeaderField: "X-AnalyticsDrop-Key")
         if let gz = Gzip.compress(body) {
             req.setValue("gzip", forHTTPHeaderField: "Content-Encoding")
             req.httpBody = gz
@@ -77,6 +77,6 @@ final class APIClient {
     }
 
     private func log(_ message: String) {
-        if config.debug { print("[Wayfind] \(message)") }
+        if config.debug { print("[AnalyticsDrop] \(message)") }
     }
 }

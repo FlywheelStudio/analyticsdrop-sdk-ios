@@ -4,16 +4,16 @@ import PackageDescription
 // swift-tools 5.9 keeps the default language mode at 5, so the Swift 6 compiler treats data-race
 // concerns as warnings (not errors) for this swizzling + off-main-thread SDK. See DECISIONS.
 let package = Package(
-    name: "Wayfind",
+    name: "AnalyticsDrop",
     platforms: [.iOS(.v15)],
     products: [
-        .library(name: "Wayfind", targets: ["Wayfind"]),
+        .library(name: "AnalyticsDrop", targets: ["AnalyticsDrop"]),
     ],
     targets: [
         .target(
-            name: "Wayfind",
+            name: "AnalyticsDrop",
             resources: [.copy("PrivacyInfo.xcprivacy")]
         ),
-        .testTarget(name: "WayfindTests", dependencies: ["Wayfind"]),
+        .testTarget(name: "AnalyticsDropTests", dependencies: ["AnalyticsDrop"]),
     ]
 )

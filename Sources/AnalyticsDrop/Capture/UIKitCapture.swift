@@ -14,7 +14,7 @@ enum UIKitCapture {
         let cls = UIViewController.self
         guard
             let original = class_getInstanceMethod(cls, #selector(UIViewController.viewDidAppear(_:))),
-            let swizzled = class_getInstanceMethod(cls, #selector(UIViewController.wf_viewDidAppear(_:)))
+            let swizzled = class_getInstanceMethod(cls, #selector(UIViewController.ad_viewDidAppear(_:)))
         else { return }
         method_exchangeImplementations(original, swizzled)
     }
@@ -58,8 +58,8 @@ enum UIKitCapture {
 }
 
 extension UIViewController {
-    @objc fileprivate func wf_viewDidAppear(_ animated: Bool) {
-        wf_viewDidAppear(animated) // calls the original implementation (swapped)
+    @objc fileprivate func ad_viewDidAppear(_ animated: Bool) {
+        ad_viewDidAppear(animated) // calls the original implementation (swapped)
         UIKitCapture.handle(self)
     }
 }

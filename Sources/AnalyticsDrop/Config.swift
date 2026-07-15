@@ -1,7 +1,7 @@
 import Foundation
 
-/// Immutable SDK configuration. Constructed by `Wayfind.start`.
-struct WayfindConfig {
+/// Immutable SDK configuration. Constructed by `AnalyticsDrop.start`.
+struct AnalyticsDropConfig {
     let apiKey: String
     let endpoint: URL
     let debug: Bool
@@ -17,6 +17,6 @@ struct WayfindConfig {
     /// Ignore a repeated identical fingerprint seen within this window (container re-layout).
     var debounceInterval: TimeInterval = 0.3
 
-    /// Placeholder hosted endpoint; dev/POC passes an explicit local URL to `Wayfind.start`.
-    static let defaultEndpoint = URL(string: "https://ingest.wayfind.dev")!
+    /// Placeholder hosted endpoint; dev/POC passes an explicit local URL to `AnalyticsDrop.start`.
+    static let defaultEndpoint = URL(string: "https://ingest.analyticsdrop.dev")!
 }

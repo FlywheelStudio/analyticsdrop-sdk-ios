@@ -9,7 +9,7 @@ final class EventQueue {
 
     init() {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
-        fileURL = (caches ?? FileManager.default.temporaryDirectory).appendingPathComponent("wayfind-events.jsonl")
+        fileURL = (caches ?? FileManager.default.temporaryDirectory).appendingPathComponent("analyticsdrop-events.jsonl")
     }
 
     var count: Int { buffer.count }

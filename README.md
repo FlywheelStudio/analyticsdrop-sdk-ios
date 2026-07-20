@@ -35,5 +35,26 @@ Requires iOS 15+, swift-tools 5.9. Transport, session/seq, identity, queue, UIKi
 capture are implemented. Deferred to the next milestone: redacted thumbnails, richer
 `NavigationStack` observation (Mechanism A), and the full XCUITest capture-rate harness.
 
-This package is developed here and will be published to its own GitHub repository; consumers add it
-via Swift Package Manager.
+## Install (Swift Package Manager)
+
+In Xcode: **File → Add Package Dependencies…** and paste:
+
+```
+https://github.com/FlywheelStudio/analyticsdrop-sdk-ios
+```
+
+Or in `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/FlywheelStudio/analyticsdrop-sdk-ios", from: "0.1.0")
+]
+```
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
+
+---
+
+AnalyticsDrop is a product of [Flywheel Studio](https://flywheel.so).

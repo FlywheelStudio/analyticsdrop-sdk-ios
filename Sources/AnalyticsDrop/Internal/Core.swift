@@ -23,7 +23,8 @@ final class Core {
     private var flushTimer: DispatchSourceTimer?
     private var installed = false
     private var enabled = OptOutStore.shared.isEnabled
-    /// True while a flush is in flight, so the retry spool isn't picked up twice.
+    /// True while a flush is in flight, so the retry spool isn't picked up twice. Only ever set
+    /// while a completion is guaranteed to arrive — see `deactivate`.
     private var flushing = false
 
     // screen-view debounce
@@ -64,6 +65,7 @@ final class Core {
     /// Build the machinery and drain whatever the previous run left behind. Serial queue only.
     private func activate() {
         guard let config else { return }
+        flushing = false
         identity = IdentityManager()
         let queue = EventQueue()
         self.queue = queue
@@ -97,6 +99,9 @@ final class Core {
         queue = nil
         transport = nil
         identity = nil
+        // Releasing the transport means an in-flight completion may never arrive; leaving this set
+        // would make every future flushNow() a no-op and stall delivery until the next launch.
+        flushing = false
         log("collection disabled — pending events discarded")
     }
 
@@ -264,7 +269,12 @@ final class Core {
 
     /// Upload, and keep the events if the failure was transient. Serial queue only.
     private func send(_ lines: [Data]) {
-        guard let transport else { return }
+        guard let transport else {
+            // The caller already drained these out of the buffer and the live file; without this
+            // they would exist nowhere.
+            queue?.spool(lines)
+            return
+        }
         flushing = true
         transport.uploadLines(lines) { [weak self] result in
             guard let self else { return }

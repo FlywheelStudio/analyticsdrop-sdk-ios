@@ -87,6 +87,11 @@ Ingest backend only: `POST {endpoint}/v1/events`, header `X-AnalyticsDrop-Key`, 
 - **The age cap depends on matching ISO8601 options.** `EventLine.timestamp` must parse what
   `ISO8601.string(from:)` writes (`.withFractionalSeconds`), or the cap silently no-ops
   (`testTimestampRoundTripsWhatTheEncoderWrites`).
+- **The spool is cleared before the upload resolves.** `takeSpooledLines()` hands ownership to the
+  in-flight batch and deletes `retry.jsonl`; the lines are written back only if the upload fails.
+  A process kill inside that window (e.g. iOS terminating a backgrounded app mid-flush) loses them.
+  Same shape as the live file, and the reason `Core.send` spools back even on its `guard` path. If
+  this ever needs to be airtight: peek, and clear only on success.
 - **The swizzle is never uninstalled** on `setEnabled(false)`; capture callbacks still fire and
   return without emitting. Not calling `start()` remains the strongest off-switch.
 - **`swift test` doesn't compile the UIKit capture path** (`#if canImport(UIKit)` is false on

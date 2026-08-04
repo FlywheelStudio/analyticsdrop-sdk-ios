@@ -10,7 +10,7 @@ struct AnalyticsDropDemoApp: App {
     init() {
         AnalyticsDrop.start(
             apiKey: "ad_test_primus_dev",
-            endpoint: URL(string: "http://localhost:3100"),
+            endpoint: URL(string: "http://localhost:3100")!,
             debug: true
         )
         AnalyticsDrop.identify("demo_user_1")

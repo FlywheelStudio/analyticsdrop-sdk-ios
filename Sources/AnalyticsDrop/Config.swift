@@ -17,6 +17,7 @@ struct AnalyticsDropConfig {
     /// Ignore a repeated identical fingerprint seen within this window (container re-layout).
     var debounceInterval: TimeInterval = 0.3
 
-    /// Placeholder hosted endpoint; dev/POC passes an explicit local URL to `AnalyticsDrop.start`.
-    static let defaultEndpoint = URL(string: "https://ingest.analyticsdrop.dev")!
+    // No `defaultEndpoint`: `endpoint` is a required argument of `AnalyticsDrop.start`. The old
+    // placeholder default (`https://ingest.analyticsdrop.dev`, which does not resolve) turned an
+    // omitted argument into silent total data loss that looked like a working integration (#2).
 }

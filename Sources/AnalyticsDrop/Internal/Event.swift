@@ -52,7 +52,7 @@ enum WireEventType: String {
 }
 
 enum SDKInfo {
-    static let version = "analyticsdrop-ios/0.1.0"
+    static let version = "analyticsdrop-ios/0.2.0"
 }
 
 /// One-time device/app context snapshot.

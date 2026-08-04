@@ -4,20 +4,43 @@ import Foundation
 ///
 /// Integrate in one line at app launch:
 /// ```swift
-/// AnalyticsDrop.start(apiKey: "ad_test_…")
+/// AnalyticsDrop.start(apiKey: "ad_test_…", endpoint: URL(string: "https://your-ingest-host")!)
 /// ```
-/// and (SwiftUI) attach `.analyticsDropTracked()` at the root.
+///
+/// Screen capture comes from `start()` alone (it installs the `viewDidAppear` swizzle). The
+/// SwiftUI `.analyticsDropTracked()` modifier is a forward-compatible no-op in 0.2.x.
 public enum AnalyticsDrop {
     /// Call once, as early as possible (App init / AppDelegate).
     /// - Parameters:
     ///   - apiKey: Your app's ingest key (`X-AnalyticsDrop-Key`).
-    ///   - endpoint: Base URL of the backend. Defaults to the hosted endpoint; pass a local URL for dev.
+    ///   - endpoint: Base URL of your ingest backend, e.g. `https://ingest.example.com` or
+    ///     `http://localhost:3100` in dev. Required: there is no hosted default yet, and a
+    ///     placeholder default meant an omitted argument silently sent every batch nowhere (#2).
     ///   - debug: When true, logs SDK activity to the console.
-    public static func start(apiKey: String, endpoint: URL? = nil, debug: Bool = false) {
+    public static func start(apiKey: String, endpoint: URL, debug: Bool = false) {
+        Core.startCalled = true
         Core.shared.start(
-            config: AnalyticsDropConfig(apiKey: apiKey, endpoint: endpoint ?? AnalyticsDropConfig.defaultEndpoint, debug: debug)
+            config: AnalyticsDropConfig(apiKey: apiKey, endpoint: endpoint, debug: debug)
         )
     }
+
+    /// Turn collection on or off at runtime — for a "share usage data" settings toggle, a consent
+    /// prompt answered after launch, or a server-side kill switch.
+    ///
+    /// Disabling stops all emission, discards everything pending (in memory and on disk — an
+    /// opted-out user must not ship their backlog later), and ends the session. Enabling starts a
+    /// fresh session; no relaunch needed either way. The choice is persisted, so later launches
+    /// honour it before any event is recorded.
+    ///
+    /// Note: *not calling* `start()` remains the strongest form of off — no swizzle is installed
+    /// and no queue exists. Prefer it when the decision can be made at launch (build gating).
+    public static func setEnabled(_ enabled: Bool) {
+        Core.shared.setEnabled(enabled)
+    }
+
+    /// Whether collection is currently enabled. `true` unless `setEnabled(false)` was called
+    /// (on this run or a previous one).
+    public static var isEnabled: Bool { OptOutStore.shared.isEnabled }
 
     /// Link the customer's own user ID. Triggers identity stitching server-side.
     public static func identify(_ userId: String) {

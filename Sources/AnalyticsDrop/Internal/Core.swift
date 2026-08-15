@@ -15,6 +15,10 @@ final class Core {
     private var identity: IdentityManager?
     private var queue: EventQueue?
     private var transport: APIClient?
+    private var thumbnails: ThumbnailRegistry?
+    /// Fingerprint of the newest emitted screen_view. Guards the async thumbnail attach: a
+    /// wireframe rendered after the user navigated on must never attach to the older screen.
+    private var lastEmittedScreenKey: String?
 
     private var sessionId: String?
     private var seq = 0
@@ -70,6 +74,7 @@ final class Core {
         let queue = EventQueue()
         self.queue = queue
         transport = APIClient(config: config)
+        thumbnails = config.captureThumbnails ? ThumbnailRegistry() : nil
 
         // Recovery: events the last run buffered but never flushed (crash), plus batches whose
         // upload failed for a retriable reason. Both go out as one batch; if that fails too they
@@ -94,6 +99,8 @@ final class Core {
         seq = 0
         lastFingerprint = nil
         lastFingerprintAt = nil
+        lastEmittedScreenKey = nil
+        thumbnails = nil
         // Discard, don't hold: a user who opts out must not ship their backlog on the next flush.
         queue?.discardAll()
         queue = nil
@@ -215,6 +222,7 @@ final class Core {
         queueSerial.async {
             guard self.enabled else { return }
             self.emit(.screenView, screen: WireScreen(fingerprint: name, kind: "manual", thumbnailPng: nil, name: name))
+            self.scheduleThumbnail(for: name)
         }
     }
 
@@ -232,7 +240,38 @@ final class Core {
             self.lastFingerprint = fingerprint
             self.lastFingerprintAt = now
             self.emit(.screenView, screen: WireScreen(fingerprint: fingerprint, kind: kind, thumbnailPng: nil, name: name))
+            self.scheduleThumbnail(for: fingerprint)
         }
+    }
+
+    /// One-time wireframe thumbnail for a just-emitted screen_view (D22). Serial queue only.
+    ///
+    /// The event is already queued, so rendering happens off the emit path: a short settle on
+    /// the main thread (layout finishes after the appearance callback), then the PNG is patched
+    /// into the still-buffered event. If the event flushed first, the fingerprint stays
+    /// unmarked and the next sighting retries — the server keeps the first thumbnail it ever
+    /// receives, so retries are idempotent.
+    private func scheduleThumbnail(for fingerprint: String) {
+        lastEmittedScreenKey = fingerprint
+        #if canImport(UIKit)
+        guard let thumbnails, thumbnails.needsCapture(fingerprint) else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            guard let self else { return }
+            // Structural fingerprints can be re-verified against what is on screen right now —
+            // never render a screen the user has already navigated away from.
+            if fingerprint.hasPrefix("fp_"), ScreenFingerprint.current() != fingerprint { return }
+            guard let png = WireframeCapture.capturePng() else { return }
+            self.queueSerial.async {
+                guard self.enabled,
+                      self.lastEmittedScreenKey == fingerprint,
+                      let queue = self.queue, let thumbnails = self.thumbnails else { return }
+                if queue.attachThumbnail(fingerprint: fingerprint, base64Png: png) {
+                    thumbnails.markCaptured(fingerprint)
+                    self.log("thumbnail attached (\(fingerprint), \(png.count) chars)")
+                }
+            }
+        }
+        #endif
     }
 
     // MARK: - Emit / flush (serial queue only)

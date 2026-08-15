@@ -36,7 +36,12 @@ every batch to a host that doesn't exist, with no error and (outside `debug`) no
   pushes, sheets, and `TabView` switches. Since the hosting class name is useless, the SDK computes
   a **structural fingerprint** of the view hierarchy (Mechanism C) as the screen id.
 - **Privacy invariant** — fingerprints record only structure (`depth, class, bucketed frame,
-  hasText`); never text content. Thumbnails (redacted boxes) are a later addition.
+  hasText`); never text content.
+- **Wireframe thumbnails** — on the first sighting of each screen (once per device, tracked in a
+  local registry), the SDK renders a **redacted wireframe**: colored rounded rectangles for
+  blocks/controls, a constant neutral block for images (pixels are never sampled), and
+  fixed-pattern bars for text. The draw vocabulary has no text operation, so OCR-able text cannot
+  appear by construction. The PNG rides on the queued `screen_view` event.
 
 Events batch and upload to `POST {endpoint}/v1/events` with header `X-AnalyticsDrop-Key`.
 
@@ -64,9 +69,9 @@ it when the decision can be made at launch (e.g. gating Debug/TestFlight builds 
 ## Status (POC)
 
 Requires iOS 15+, swift-tools 5.9. Transport, session/seq, identity, durable queue with retry,
-runtime opt-out, UIKit + SwiftUI capture are implemented. Deferred to the next milestone: redacted
-thumbnails, richer `NavigationStack` observation (Mechanism A), and the full XCUITest capture-rate
-harness.
+runtime opt-out, UIKit + SwiftUI capture, and redacted wireframe thumbnails are implemented.
+Deferred to the next milestone: richer `NavigationStack` observation (Mechanism A) and the full
+XCUITest capture-rate harness.
 
 ## Install (Swift Package Manager)
 

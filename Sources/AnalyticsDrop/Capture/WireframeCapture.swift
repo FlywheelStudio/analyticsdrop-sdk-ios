@@ -2,14 +2,17 @@
 import UIKit
 
 /// UIKit side of the wireframe pipeline (see Wireframe.swift for the pure planner and the
-/// privacy note). Walks the key window recording geometry, colors and coarse roles — deliberately
-/// never text content, input values or image pixels — then rasterizes the plan to a base64 PNG.
+/// privacy note). Walks the key window's **layer tree** — on modern iOS, SwiftUI renders a whole
+/// screen as sublayers of one hosting view (text as `CGDrawingLayer`, images as `ImageLayer`,
+/// colored blocks as plain `CALayer`s), so a view walk sees almost nothing. Records geometry,
+/// colors and coarse roles — deliberately never text content, input values or image pixels —
+/// then rasterizes the plan to a base64 PNG.
 enum WireframeCapture {
-    /// Longest-side pixel budget for the rendered PNG (D22: 400×866 for a portrait phone).
+    /// Pixel budget for the rendered PNG (D22: 400×866 for a portrait phone).
     private static let maxWidth: CGFloat = 400
     private static let maxHeight: CGFloat = 866
     private static let maxFacts = 600
-    private static let maxDepth = 32
+    private static let maxDepth = 48
     /// Well under the server's 700KB cap — a wireframe PNG is typically 5–40KB.
     static let maxBase64Length = 256_000
 
@@ -22,7 +25,7 @@ enum WireframeCapture {
         guard size.width > 0, size.height > 0 else { return nil }
 
         var facts: [WireElementFact] = []
-        walk(window, depth: 0, into: &facts)
+        walk(window.layer, root: window.layer, depth: 0, into: &facts)
 
         let pageBg = wireColor(window.backgroundColor?.cgColor)
             ?? wireColor(UIColor.systemBackground.resolvedColor(with: window.traitCollection).cgColor)
@@ -36,62 +39,66 @@ enum WireframeCapture {
 
     // MARK: - Collect
 
-    private static func walk(_ view: UIView, depth: Int, into facts: inout [WireElementFact]) {
+    private static func walk(_ layer: CALayer, root: CALayer, depth: Int, into facts: inout [WireElementFact]) {
         guard depth <= maxDepth else { return }
-        for sub in view.subviews {
+        for sub in layer.sublayers ?? [] {
             if facts.count >= maxFacts { return }
-            guard !sub.isHidden, sub.alpha > 0.01 else { continue }
-            if let fact = classify(sub, depth: depth) { facts.append(fact) }
-            walk(sub, depth: depth + 1, into: &facts)
+            guard !sub.isHidden, sub.opacity > 0.01 else { continue }
+            // A hidden/transparent view hides its whole layer subtree.
+            if let view = sub.delegate as? UIView, view.isHidden || view.alpha <= 0.01 { continue }
+            if let fact = classify(sub, root: root, depth: depth) { facts.append(fact) }
+            walk(sub, root: root, depth: depth + 1, into: &facts)
         }
     }
 
-    /// Role + color of one view. Text content is reduced to a line count; images are never
-    /// sampled (the planner paints them a constant neutral).
-    private static func classify(_ view: UIView, depth: Int) -> WireElementFact? {
-        let size = view.bounds.size
+    /// Role + color of one layer. When the layer backs a UIView the view types give the role;
+    /// otherwise the layer class does (SwiftUI's private render layers). Text content is reduced
+    /// to a line count; image pixels are never read (the planner paints a constant neutral).
+    private static func classify(_ layer: CALayer, root: CALayer, depth: Int) -> WireElementFact? {
+        let size = layer.bounds.size
         guard size.width >= Wireframe.minSize, size.height >= Wireframe.minSize else { return nil }
-        let frame = view.convert(view.bounds, to: nil) // window coordinates
-        let radius = view.layer.cornerRadius
-        let fill = wireColor(view.backgroundColor?.cgColor ?? view.layer.backgroundColor)
+        let frame = layer.convert(layer.bounds, to: root)
+        let radius = layer.cornerRadius
+        let bg = wireColor(layer.backgroundColor)
 
-        // UIKit text views: presence + line estimate only, never the string.
-        if let label = view as? UILabel, !(label.text?.isEmpty ?? true) {
-            let lineHeight = max(label.font?.lineHeight ?? 17, 1)
-            return textFact(depth: depth, frame: frame, radius: radius,
-                            lineHeight: lineHeight, color: label.textColor)
-        }
-        if let tv = view as? UITextView, !tv.text.isEmpty {
-            let lineHeight = max(tv.font?.lineHeight ?? 17, 1)
-            return textFact(depth: depth, frame: frame, radius: radius,
-                            lineHeight: lineHeight, color: tv.textColor)
-        }
-        if view is UITextField {
-            // Never distinguish filled from empty (that leaks state); a field is a control.
-            return WireElementFact(depth: depth, frame: frame, radius: radius, kind: .control, fill: fill)
+        if let view = layer.delegate as? UIView, view.layer === layer {
+            if let label = view as? UILabel, !(label.text?.isEmpty ?? true) {
+                return textFact(depth: depth, frame: frame, radius: radius,
+                                lineHeight: max(label.font?.lineHeight ?? 17, 1), color: label.textColor)
+            }
+            if let tv = view as? UITextView, !tv.text.isEmpty {
+                return textFact(depth: depth, frame: frame, radius: radius,
+                                lineHeight: max(tv.font?.lineHeight ?? 17, 1), color: tv.textColor)
+            }
+            if view is UITextField {
+                // Never distinguish filled from empty (that leaks state); a field is a control.
+                return WireElementFact(depth: depth, frame: frame, radius: radius, kind: .control, fill: bg)
+            }
+            if view is UIImageView {
+                return WireElementFact(depth: depth, frame: frame, radius: radius, kind: .image)
+            }
+            if view is UIControl {
+                return WireElementFact(depth: depth, frame: frame, radius: radius, kind: .control, fill: bg)
+            }
+            if let bg, bg.a > 0 {
+                return WireElementFact(depth: depth, frame: frame, radius: radius, kind: .block, fill: bg)
+            }
+            return nil
         }
 
-        if view is UIImageView {
+        // Pure render layers (SwiftUI internals). Class names are the only signal; the drawn
+        // pixels are never read.
+        let className = String(describing: type(of: layer))
+        if className.contains("CGDrawing") {
+            // SwiftUI Text draws its glyphs into this layer. Fixed-pattern bars, gray fallback
+            // color (reading the real color would mean sampling rendered pixels — never done).
+            return textFact(depth: depth, frame: frame, radius: radius, lineHeight: 20, color: nil)
+        }
+        if layer.contents != nil || className.contains("ImageLayer") || className.contains("ColorShape") {
             return WireElementFact(depth: depth, frame: frame, radius: radius, kind: .image)
         }
-        if view is UIControl {
-            return WireElementFact(depth: depth, frame: frame, radius: radius, kind: .control, fill: fill)
-        }
-
-        // SwiftUI draws Text into the layer of a private CGDrawingView — no UILabel exists.
-        // The class name is the only signal; the drawn glyphs are never read.
-        let className = String(describing: type(of: view))
-        if className.contains("CGDrawingView") {
-            return textFact(depth: depth, frame: frame, radius: radius,
-                            lineHeight: 20, color: nil)
-        }
-        // Layer contents = a bitmap (SwiftUI Image, AsyncImage, video poster…). Neutral block.
-        if view.layer.contents != nil {
-            return WireElementFact(depth: depth, frame: frame, radius: radius, kind: .image)
-        }
-
-        if let fill, fill.a > 0 {
-            return WireElementFact(depth: depth, frame: frame, radius: radius, kind: .block, fill: fill)
+        if let bg, bg.a > 0 {
+            return WireElementFact(depth: depth, frame: frame, radius: radius, kind: .block, fill: bg)
         }
         return nil
     }

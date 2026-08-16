@@ -86,6 +86,30 @@ final class EventQueue {
         return considered - kept.count
     }
 
+    /// Patch the newest still-buffered `screen_view` for `fingerprint` that has no thumbnail yet
+    /// (D22 attach seam — the wireframe is rendered after the event was queued). Returns false
+    /// when no such event is buffered (it already flushed); the caller then leaves the
+    /// fingerprint unmarked so the next sighting retries.
+    func attachThumbnail(fingerprint: String, base64Png: String) -> Bool {
+        for i in buffer.indices.reversed() {
+            guard var event = try? JSONSerialization.jsonObject(with: buffer[i]) as? [String: Any],
+                  event["type"] as? String == "screen_view",
+                  var screen = event["screen"] as? [String: Any],
+                  screen["fingerprint"] as? String == fingerprint,
+                  screen["thumbnailPng"] == nil || screen["thumbnailPng"] is NSNull
+            else { continue }
+            screen["thumbnailPng"] = base64Png
+            event["screen"] = screen
+            guard let line = try? JSONSerialization.data(withJSONObject: event) else { return false }
+            buffer[i] = line
+            // Keep the crash-recovery mirror in sync with the patched buffer.
+            remove(liveURL)
+            appendLines(buffer, to: liveURL)
+            return true
+        }
+        return false
+    }
+
     /// Drop everything, in memory and on disk (runtime opt-out — #4).
     func discardAll() {
         buffer.removeAll(keepingCapacity: false)

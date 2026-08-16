@@ -12,8 +12,9 @@ struct AnalyticsDropConfig {
     var flushInterval: TimeInterval = 30
     /// Grace period before a backgrounded session ends (handles quick app switches).
     var sessionGrace: TimeInterval = 30
-    /// Emit redacted thumbnails on first sighting. Off for the POC first demo (see spec §10 fallback).
-    var captureThumbnails = false
+    /// Emit a redacted wireframe thumbnail on the first sighting of each screen (D22): colored
+    /// rounded rects + text bars only, never real pixels or text.
+    var captureThumbnails = true
     /// Ignore a repeated identical fingerprint seen within this window (container re-layout).
     var debounceInterval: TimeInterval = 0.3
 

@@ -98,7 +98,7 @@ Or in `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/FlywheelStudio/analyticsdrop-sdk-ios", from: "0.1.0")
+    .package(url: "https://github.com/FlywheelStudio/analyticsdrop-sdk-ios", from: "0.4.0")
 ]
 ```
 

@@ -47,6 +47,21 @@ public enum AnalyticsDrop {
         Core.shared.identify(userId)
     }
 
+    /// Forget the current user and start a new anonymous identity. Call it when the user logs out,
+    /// and after an account deletion succeeds.
+    ///
+    /// Ends the current session under the old identity, clears the `identify` user ID, and rotates
+    /// the anonymous device ID (persisted, so it survives relaunch). Without it, the next account
+    /// on the same device shares the old anonymous ID, and server-side identity stitching merges
+    /// the two users' histories. Events already queued keep the identity they were recorded
+    /// under and still upload. A new session starts at once if the app is in the foreground.
+    ///
+    /// Safe to call before `start()` or while collection is disabled: it rotates the persisted ID
+    /// and emits nothing.
+    public static func reset() {
+        Core.shared.reset()
+    }
+
     /// Manual conversion event. Deliberately minimal.
     public static func track(_ event: String, properties: [String: AnalyticsDropValue]? = nil) {
         Core.shared.track(event, properties: properties)

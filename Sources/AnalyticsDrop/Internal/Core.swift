@@ -7,7 +7,23 @@ import UIKit
 /// on the main thread. Capture hooks and public API funnel through here.
 final class Core {
     static let shared = Core()
-    private init() {}
+
+    private let optOut: OptOutStore
+    private let identityService: String
+    private let queueDirectory: URL?
+
+    private convenience init() {
+        self.init(optOut: .shared, identityService: IdentityManager.defaultService, queueDirectory: nil)
+    }
+
+    /// Test seam: isolated opt-out defaults, Keychain service and queue directory, so a test never
+    /// touches the host's real identity or backlog.
+    init(optOut: OptOutStore, identityService: String, queueDirectory: URL?) {
+        self.optOut = optOut
+        self.identityService = identityService
+        self.queueDirectory = queueDirectory
+        self.enabled = optOut.isEnabled
+    }
 
     private let queueSerial = DispatchQueue(label: "dev.analyticsdrop.core")
 
@@ -26,7 +42,7 @@ final class Core {
     private var endWork: DispatchWorkItem?
     private var flushTimer: DispatchSourceTimer?
     private var installed = false
-    private var enabled = OptOutStore.shared.isEnabled
+    private var enabled: Bool
     /// True while a flush is in flight, so the retry spool isn't picked up twice. Only ever set
     /// while a completion is guaranteed to arrive — see `deactivate`.
     private var flushing = false
@@ -59,7 +75,7 @@ final class Core {
             self.activate()
         }
 
-        guard OptOutStore.shared.isEnabled else { return }
+        guard optOut.isEnabled else { return }
         onMain {
             self.installIfNeeded()
             self.handleAppActive()
@@ -70,8 +86,8 @@ final class Core {
     private func activate() {
         guard let config else { return }
         flushing = false
-        identity = IdentityManager()
-        let queue = EventQueue()
+        identity = IdentityManager(service: identityService)
+        let queue = EventQueue(directory: queueDirectory)
         self.queue = queue
         transport = APIClient(config: config)
         thumbnails = config.captureThumbnails ? ThumbnailRegistry() : nil
@@ -114,7 +130,7 @@ final class Core {
 
     /// Runtime opt-out (#4). The persisted choice is honoured by later launches too.
     func setEnabled(_ newValue: Bool) {
-        OptOutStore.shared.isEnabled = newValue
+        optOut.isEnabled = newValue
         queueSerial.async {
             guard self.enabled != newValue else { return }
             self.enabled = newValue
@@ -208,6 +224,30 @@ final class Core {
             guard self.enabled else { return }
             self.identity?.identify(userId)
             self.emit(.identify)
+        }
+    }
+
+    /// Logout / account deletion (decision 005). Ends the session under the old identity, then
+    /// forgets the user id and rotates the anonymous id. Events already
+    /// queued keep the identity they were emitted under. With no live identity (before `start()`,
+    /// or opted out) it still rotates the persisted id, and emits nothing.
+    func reset() {
+        queueSerial.async {
+            guard let identity = self.identity else {
+                IdentityManager.rotatePersistedId(service: self.identityService)
+                self.log("reset — persisted anonymous id rotated (not collecting)")
+                return
+            }
+            let hadSession = self.sessionId != nil
+            self.endSession()
+            identity.reset()
+            self.lastFingerprint = nil
+            self.lastFingerprintAt = nil
+            self.lastEmittedScreenKey = nil
+            // In the foreground, open the next session now so its session_start leads. In the
+            // background, handleAppActive opens it on return.
+            if hadSession && self.lastBackground == nil { self.beginSession() }
+            self.log("reset (anon \(identity.anonymousId.prefix(8)))")
         }
     }
 
@@ -328,6 +368,21 @@ final class Core {
     }
 
     // MARK: - helpers
+
+    /// Test support: run `body` on the serial queue after everything already dispatched.
+    func syncForTesting<T>(_ body: () -> T) -> T { queueSerial.sync(execute: body) }
+
+    /// Test support: drain the in-memory buffer as decoded JSON objects.
+    func drainQueuedEventsForTesting() -> [[String: Any]] {
+        queueSerial.sync {
+            (queue?.drainLines() ?? []).compactMap {
+                (try? JSONSerialization.jsonObject(with: $0)) as? [String: Any]
+            }
+        }
+    }
+
+    /// Test support: the live identity, if any.
+    var anonymousIdForTesting: String? { queueSerial.sync { identity?.anonymousId } }
 
     private func onMain(_ block: @escaping () -> Void) {
         if Thread.isMainThread { block() } else { DispatchQueue.main.async(execute: block) }

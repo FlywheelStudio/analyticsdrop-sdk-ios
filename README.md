@@ -16,6 +16,7 @@ AnalyticsDrop.identify("cust_123")
 AnalyticsDrop.track("purchase", properties: ["value": 9.99])
 SomeView().analyticsDropScreen("Checkout")   // exact name escape hatch
 AnalyticsDrop.setEnabled(false)              // runtime opt-out (consent toggle / kill switch)
+AnalyticsDrop.reset()                        // on logout, and after account deletion succeeds
 ```
 
 `endpoint` is **required** — point it at your ingest host (`https://…`) or a local backend in dev.
@@ -65,6 +66,18 @@ a fresh session. The choice persists across launches, and `AnalyticsDrop.isEnabl
 
 Not calling `start()` is still the strongest off-switch — no swizzle, no session, no queue. Prefer
 it when the decision can be made at launch (e.g. gating Debug/TestFlight builds out of prod data).
+
+## Logout & account deletion
+
+Call `AnalyticsDrop.reset()` when the user logs out, and after an account deletion succeeds. It ends
+the session under the old identity, clears the `identify` user ID, and rotates the anonymous device
+ID. Skip it and the next account on the same device inherits the old anonymous ID: the backend then
+stitches both people into one user. Events already queued keep their original identity and still
+upload. `reset()` is safe before `start()` and while opted out — it rotates the stored ID and sends
+nothing.
+
+`reset()` does not delete data already on the server. Erasing a user's history (GDPR/CCPA) is a
+backend operation keyed on the `identify` user ID.
 
 ## Status (POC)
 
